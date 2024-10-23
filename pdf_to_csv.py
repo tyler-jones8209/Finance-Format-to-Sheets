@@ -74,8 +74,8 @@ def page_one(pages):
         new_date = f"{int(month)}/{int(day)}"
         amount = lst[0][-2].replace("-", "")
         temp_lst.append(new_date)
-        temp_lst.append(amount)
         temp_lst.append(lst[1].lower())
+        temp_lst.append(amount)
         final_trans_list.append(temp_lst)
 
     return final_trans_list
@@ -122,8 +122,8 @@ def middle_pages(pages):
         new_date = f"{int(month)}/{int(day)}"
         amount = lst[0][-2].replace("-", "")
         temp_lst.append(new_date)
+        temp_lst.append(lst[1].lower())  
         temp_lst.append(amount)
-        temp_lst.append(lst[1].lower())
         final_trans_list.append(temp_lst)
     combined.extend(final_trans_list)
 
@@ -178,8 +178,8 @@ def page_end(pages):
         new_date = f"{int(month)}/{int(day)}"
         amount = lst[0][-2].replace("-", "")
         temp_lst.append(new_date)
+        temp_lst.append(lst[1].lower())  
         temp_lst.append(amount)
-        temp_lst.append(lst[1].lower())
         final_trans_list.append(temp_lst)
     
 
@@ -188,9 +188,7 @@ def page_end(pages):
 def write_to_csv(transactions, filename='transactions.csv'):
     with open(filename, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerow(['Date', 'Amount', 'Account', 'Text'])  # Write the header
-        writer.writerows(transactions)  # Write the transactions
-
+        writer.writerows(transactions)
 
 if __name__ == "__main__":
 
@@ -209,8 +207,8 @@ if __name__ == "__main__":
 
     counter = 0
     for i, item in enumerate(transactions):
-        text = item[2]
-        amount = float(item[1])
+        text = item[1]  # account is now in item[1] after reordering
+        amount = float(item[2])  # amount is now in item[2] after reordering
         matched = False  
         # Ensure there's a placeholder for item[3]
         if len(item) < 4:
@@ -224,35 +222,34 @@ if __name__ == "__main__":
             if any(all(word in text.lower() for word in keyword.split()) for keyword in keywords):
                 if account == "Gas Expense":
                     if amount < 20:
-                        item[2] = "Snack Expense"
+                        item[1] = "Snack Expense"
                         item[3] = text
                     elif 20 <= amount < 30:
-                        item[2] = "Gas Expense"
+                        item[1] = "Gas Expense"
                         item[3] = text
                         snack_amount = amount - 20
                         if snack_amount > 0:
-                            snack_item = [item[0], f"{snack_amount:.2f}", "Snack Expense", text]
+                            snack_item = [item[0], "Snack Expense", f"{snack_amount:.2f}", text]
                             transactions.insert(i + 1, snack_item)
                     elif amount >= 30:
-                        item[2] = "Gas Expense"
+                        item[1] = "Gas Expense"
                         item[3] = text
 
                         snack_amount = amount - 30
                         if snack_amount > 0:
-                            snack_item = [item[0], f"{snack_amount:.2f}", "Snack Expense", text]
+                            snack_item = [item[0], "Snack Expense", f"{snack_amount:.2f}", text]
                             transactions.insert(i + 1, snack_item)      
                     matched = True
                     break
                 else:
-                    item[2] = account
+                    item[1] = account
                     item[3] = text
                     matched = True
                     counter += 1
                     break 
         if not matched: 
-            item[2] = "[]"
+            item[1] = ""
             item[3] = text
             counter += 1
+    
     write_to_csv(transactions)
-    for item in transactions:
-        print(item)
