@@ -3,7 +3,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import csv
 
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name('no', scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name('Finances/logical-veld-439501-v7-8119ef621faf.json', scope)
 client = gspread.authorize(creds)
 
 sheet = client.open("2024 Finances").sheet1
@@ -15,7 +15,7 @@ sheet.batch_clear([range_to_clear])
 start_row = 3
 
 data_to_insert = []
-with open("transactions.csv", mode='r') as file:
+with open("Finances/transactions.csv", mode='r') as file:
     csv_reader = csv.reader(file)
     for row in csv_reader:
         date_str = row[0]  
