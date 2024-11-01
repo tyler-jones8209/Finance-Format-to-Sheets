@@ -2,10 +2,8 @@ import pdfplumber
 import csv
 
 # date, account, amount, notes
-accounts = {"High School Revenue" : ["richmond communi-payroll", "payroll"],
-            "Sys Admin Revenue" : "earlham college-payroll",
-            "Tutor Revenue" : ["lobby deposit d", "natco credit union"],
-            "Other Revenue" : ["deposit venmo", "tax ref", "payments^", "natco cu"],
+accounts = {"Work Revenue" : ["richmond communi-payroll", "payroll", "earlham college-payroll"],
+            "Other Revenue" : ["deposit venmo", "tax ref", "payments^", "natco cu", "venmo*"],
             "Car Expense" : ["knuckle busters", "autozone"],
             "McDonald's Expense" : ["mcdonald's"],
             "Restaurant Expense" : ["dairy queen", "doordash", "chipotle", "thai thara", "parlor doughnuts", "gulzars", " kfc ", "wendy's", "burger king", "domino's"],
@@ -19,15 +17,16 @@ accounts = {"High School Revenue" : ["richmond communi-payroll", "payroll"],
             "Entertainment Expense" : ["online amc", "dance alloy"],
             "School Expense" : ["college transcript", "tms*earlham", "tms*eac"],
             "Heatlh Expense" : ["whitewater valley dental"],
-            "Other Expense" : ["venmo visa direct", "mktp", "ebay o", "metapay", "great clips", "goodwill", "venmo*", "hellomerch.com", "amazon.com*", "kohls"]}
+            "Other Expense" : ["venmo visa direct", "mktp", "ebay o", "metapay", "great clips", "goodwill", "hellomerch.com", "amazon.com*", "kohls"]}
 
 def retrieve_pages(file):
+    file_path = f"Finances/{file}" # fixing file path after moving to subdirectory 
     pages = []
-    with pdfplumber.open(file) as pdf:
+    with pdfplumber.open(file_path) as pdf:
         for page in pdf.pages:
             text = page.extract_text()
-            page_text = text
-            pages.append(page_text)
+            if text:
+                pages.append(text)
     return pages
 
 
@@ -40,20 +39,17 @@ def page_one(pages):
             start_index = split.index(item)
     del split[0:start_index + 1]
 
+
+    # replace if/else statements with list
+    skip_terms = ["Home Banking Transfer Deposit", "Home Banking Transfer Withdraw", "ATM TRANSFER DEPOSIT", "eBay Inc", "ACCTVERIFY"]
+
     transactions = []
 
     for item in split:
-        if "Home Banking Transfer Deposit" in item:
-            continue
-        elif "Home Banking Transfer Withdraw" in item:
-            continue
-        elif "ATM TRANSFER DEPOSIT" in item:
-            continue
-        elif "eBay Inc" in item  or "ACCTVERIFY" in item:
+        if any(term in item for term in skip_terms):
             continue
         elif "LOBBY DEPOSIT D" in item:
-            transactions.append(item)
-            transactions.append("NATCO CREDIT UNION")
+            transactions.extend([item, "NATCO CREDIT UNION DEPOSIT"])
         else:
             transactions.append(item)
 
@@ -65,67 +61,58 @@ def page_one(pages):
         else:
             transaction_pairs.append([transactions[index]])
 
+    # removed temp_list
     final_trans_list = []
     for lst in transaction_pairs:
-        temp_lst = []
         lst[0] = (lst[0].split(" "))
         date = lst[0][0]
         month, day = date.split("/")
         new_date = f"{int(month)}/{int(day)}"
         amount = lst[0][-2].replace("-", "")
-        temp_lst.append(new_date)
-        temp_lst.append(lst[1].lower())
-        temp_lst.append(amount)
-        final_trans_list.append(temp_lst)
+        final_trans_list.append([new_date, lst[1].lower(), amount])
 
     return final_trans_list
 
 def middle_pages(pages):
     combined = []
-    for index in range(1, len(pages) - 1):
+    for index in range(1, len(pages) - 1):  # Start at page 1, end at len(pages) - 1
         page = pages[index]
         split = page.split("\n")
 
-        start_index = 0
-        for item in split:
-            if "---- ----" in item:
-                start_index = split.index(item)
-                break
-        del split[0:start_index + 1]
+        start_index = next((i for i, item in enumerate(split) if "---- ----" in item), None)
+        if start_index is not None:
+            split = split[start_index + 1:]  # Adjust based on found start index
+
+
+        skip_terms = ["Home Banking Transfer Deposit", "Home Banking Transfer Withdraw", "ATM TRANSFER DEPOSIT", "eBay Inc", "ACCTVERIFY"]
 
         transactions = []
 
         for item in split:
-            if "Home Banking Transfer Deposit" in item:
+            # Check for skip terms
+            if any(term in item for term in skip_terms):
                 continue
-            elif "Home Banking Transfer Withdraw" in item:
-                continue
-            elif "ATM TRANSFER DEPOSIT" in item:
-                continue
+            elif "LOBBY DEPOSIT D" in item:
+                transactions.append(item)
+                transactions.append("NATCO CREDIT UNION DEPOSIT")  # Handle special case
             else:
                 transactions.append(item)
 
         transaction_pairs = []
 
-    for index in range(0, len(transactions), 2):
-        if index + 1 < len(transactions):
-            transaction_pairs.append([transactions[index], transactions[index + 1]])
-        else:
-            transaction_pairs.append([transactions[index]])
+        for index in range(0, len(transactions), 2):
+            if index + 1 < len(transactions):
+                transaction_pairs.append([transactions[index], transactions[index + 1]])
+            else:
+                transaction_pairs.append([transactions[index]])
 
-    final_trans_list = []
-    for lst in transaction_pairs:
-        temp_lst = []
-        lst[0] = (lst[0].split(" "))
-        date = lst[0][0]
-        month, day = date.split("/")
-        new_date = f"{int(month)}/{int(day)}"
-        amount = lst[0][-2].replace("-", "")
-        temp_lst.append(new_date)
-        temp_lst.append(lst[1].lower())  
-        temp_lst.append(amount)
-        final_trans_list.append(temp_lst)
-    combined.extend(final_trans_list)
+        for lst in transaction_pairs:
+            lst[0] = (lst[0].split(" "))
+            date = lst[0][0]
+            month, day = date.split("/")
+            new_date = f"{int(month)}/{int(day)}"
+            amount = lst[0][-2].replace("-", "")
+            combined.append([new_date, lst[1].lower(), amount])
 
     return combined
     
@@ -146,18 +133,14 @@ def page_end(pages):
             break
     del split[end_index::]
 
+    skip_terms = ["Home Banking Transfer Deposit", "Home Banking Transfer Withdraw", "ATM TRANSFER DEPOSIT"]
     transactions = []
 
     for item in split:
-        if "Home Banking Transfer Deposit" in item:
-            continue
-        elif "Home Banking Transfer Withdraw" in item:
-            continue
-        elif "ATM TRANSFER DEPOSIT" in item:
+        if any(term in item for term in skip_terms):
             continue
         elif "LOBBY DEPOSIT D" in item:
-            transactions.append(item)
-            transactions.append("NATCO CREDIT UNION")
+            transactions.extend([item, "NATCO CREDIT UNION DEPOSIT"])
         else:
             transactions.append(item)
 
@@ -171,46 +154,39 @@ def page_end(pages):
 
     final_trans_list = []
     for lst in transaction_pairs:
-        temp_lst = []
         lst[0] = (lst[0].split(" "))
         date = lst[0][0]
         month, day = date.split("/")
         new_date = f"{int(month)}/{int(day)}"
         amount = lst[0][-2].replace("-", "")
-        temp_lst.append(new_date)
-        temp_lst.append(lst[1].lower())  
-        temp_lst.append(amount)
-        final_trans_list.append(temp_lst)
+        final_trans_list.append([new_date, lst[1].lower(), amount])
     
-
     return final_trans_list
 
-def write_to_csv(transactions, filename='transactions.csv'):
+def write_to_csv(transactions, filename='Finances/transactions.csv'):
     with open(filename, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerows(transactions)
 
 if __name__ == "__main__":
 
-    files = ["Jan2024.pdf", "Feb2024.pdf", "Mar2024.pdf", "Apr2024.pdf", "May2024.pdf", "Jun2024.pdf", "Jul2024.pdf", "Aug2024.pdf", "Sep2024.pdf"]
+    files = ["Jan2024.pdf", "Feb2024.pdf", "Mar2024.pdf", "Apr2024.pdf", "May2024.pdf", "Jun2024.pdf", "Jul2024.pdf", "Aug2024.pdf", "Sep2024.pdf", "Oct2024.pdf"]
 
     transactions = []
 
     for file in files:
         pages = retrieve_pages(file)
-        one = page_one(pages)
-        middle = middle_pages(pages)
-        end = page_end(pages)
-        transactions.extend(one)
-        transactions.extend(middle)
-        transactions.extend(end)
+        transactions.extend(page_one(pages))
+        transactions.extend(middle_pages(pages))
+        transactions.extend(page_end(pages))
 
-    counter = 0
+
+    # some transactions are a combination of gas and snacks. Since i only buy gas in $20 or $30 amounts, i subtract that from the amount and use the rest of the amount as a snack transacttion.
     for i, item in enumerate(transactions):
         text = item[1]  # account is now in item[1] after reordering
         amount = float(item[2])  # amount is now in item[2] after reordering
         matched = False  
-        # Ensure there's a placeholder for item[3]
+
         if len(item) < 4:
             item.append("")
         if "Snack Expense" in text:
@@ -218,7 +194,6 @@ if __name__ == "__main__":
         for account, keywords in accounts.items():
             if isinstance(keywords, str):
                 keywords = [keywords]
-            # check if keyword appears in text
             if any(all(word in text.lower() for word in keyword.split()) for keyword in keywords):
                 if account == "Gas Expense":
                     if amount < 20:
@@ -234,7 +209,6 @@ if __name__ == "__main__":
                     elif amount >= 30:
                         item[1] = "Gas Expense"
                         item[3] = text
-
                         snack_amount = amount - 30
                         if snack_amount > 0:
                             snack_item = [item[0], "Snack Expense", f"{snack_amount:.2f}", text]
@@ -245,11 +219,11 @@ if __name__ == "__main__":
                     item[1] = account
                     item[3] = text
                     matched = True
-                    counter += 1
                     break 
         if not matched: 
             item[1] = ""
             item[3] = text
-            counter += 1
     
     write_to_csv(transactions)
+
+    print("Succesfully Wrote Information to CSV File.")
