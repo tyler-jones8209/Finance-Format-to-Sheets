@@ -2,22 +2,7 @@ import pdfplumber
 import csv
 
 # date, account, amount, notes
-accounts = {"Work Revenue" : ["richmond communi-payroll", "payroll", "earlham college-payroll"],
-            "Other Revenue" : ["deposit venmo", "tax ref", "payments^", "natco cu", "venmo*"],
-            "Car Expense" : ["knuckle busters", "autozone"],
-            "McDonald's Expense" : ["mcdonald's"],
-            "Restaurant Expense" : ["dairy queen", "doordash", "chipotle", "thai thara", "parlor doughnuts", "gulzars", " kfc ", "wendy's", "burger king", "domino's"],
-            "Snack Expense" : ["milkhouse", "roscoe's", "metz", "fifth st. coffee", "the milk house"],
-            "Guitar Expense" : ["sweetwater", "stringjoy"],
-            "Lego Expense" : ["bricklink", "bricklink.co", "brick", "paypal"],
-            "Game Expense" : ["playstation", "microsoft", "steam", "apple"],
-            "Subscription Expense" : ["cricket wireless", "westside storage", "spotify", "amazon prime", "songsterr", "disney"],
-            "Gas Expense" : ["speedway", "marathon", "bp", "holiday", "citgo", "trego travel center"],
-            "Grocery Expense" : ["wal-mart", "dollar general", "johnsons", "menards", "mnrd-richmond"],
-            "Entertainment Expense" : ["online amc", "dance alloy"],
-            "School Expense" : ["college transcript", "tms*earlham", "tms*eac"],
-            "Heatlh Expense" : ["whitewater valley dental"],
-            "Other Expense" : ["venmo visa direct", "mktp", "ebay o", "metapay", "great clips", "goodwill", "hellomerch.com", "amazon.com*", "kohls"]}
+accounts = {}
 
 def retrieve_pages(file):
     file_path = f"Finances/{file}" # fixing file path after moving to subdirectory 
